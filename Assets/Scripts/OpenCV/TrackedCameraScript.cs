@@ -12,7 +12,12 @@ public class TrackedCameraScript : MonoBehaviour
         return Instance.texture;
     }
 
+    public GameObject screen;
     public MeshRenderer screenRenderer;
+    public float xOffsetAngle;
+    public float zOffsetAngle;
+    public Vector3 localOffset;
+    private Vector3 initPos;
     public Texture2D texture = null;
     public uint index;
 
@@ -32,6 +37,8 @@ public class TrackedCameraScript : MonoBehaviour
 
     void Start()
     {
+        initPos = screen.transform.localPosition;
+
         uint width = 0, height = 0;
         bool pHasCamera = false;
 
@@ -80,6 +87,11 @@ public class TrackedCameraScript : MonoBehaviour
 
     void Update()
     {
+        screen.transform.localPosition = initPos + localOffset;
+        screen.transform.localRotation = Quaternion.identity;
+        screen.transform.RotateAround(screen.transform.position, screen.transform.forward, 180.0f + zOffsetAngle);
+        screen.transform.RotateAround(screen.transform.parent.position, screen.transform.parent.right, xOffsetAngle);
+
         // first get header only
         camerror = trcam_instance.GetVideoStreamFrameBuffer(pTrackedCamera, EVRTrackedCameraFrameType.Undistorted, (IntPtr)null, 0, ref pFrameHeader, (uint)Marshal.SizeOf(typeof(CameraVideoStreamFrameHeader_t)));
         if (camerror != EVRTrackedCameraError.None)

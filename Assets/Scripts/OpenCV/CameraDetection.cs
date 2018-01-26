@@ -37,6 +37,9 @@ public class CameraDetection : MonoBehaviour
     public Vector2 pattern = new Vector2(7, 4);
     public Vector2 requestedResolution = new Vector2(640, 480);
     public FlipType flip = FlipType.Horizontal;
+    public Vector3 localOffset;
+    public float xOffsetAngle;
+    public float zOffsetAngle;
 
     private Size patternSize;
     private MCvTermCriteria criteria = new MCvTermCriteria(100, 1e-5);
@@ -232,11 +235,25 @@ public class CameraDetection : MonoBehaviour
         cvModelView.m23 = (float)translationData[2];
         cvModelView.m33 = 1;
         //cvModelView = cvModelView.inverse;
-        
-        Matrix4x4 corrected = ExtractMatrixCorrected(cvModelView);
+
+        Vector3 position = ExtractPosition(cvModelView) + localOffset;
+        Quaternion rotation = ExtractRotation(cvModelView)
+            * Quaternion.AngleAxis(zOffsetAngle, Vector3.forward) 
+            * Quaternion.AngleAxis(180, Vector3.up);
+
+        GameObject temp = new GameObject();
+        temp.transform.position = position;
+        temp.transform.rotation = rotation;
+        temp.transform.RotateAround(Vector3.zero, Vector3.right, xOffsetAngle);
+        temp.transform.RotateAround(position, Vector3.forward, zOffsetAngle);
+        position = temp.transform.position;
+        rotation = temp.transform.rotation;
+        Destroy(temp);
+
+        Matrix4x4 corrected = Vector3QuatToMatrix(position, rotation);
         corrected = mainCamera.transform.localToWorldMatrix * corrected;
         target.transform.position = ExtractPosition(corrected);
-        target.transform.rotation = ExtractRotation(corrected);
+        target.transform.rotation = ExtractRotation(corrected) * Quaternion.AngleAxis(180, Vector3.up);
     }
 
     public Matrix4x4 ExtractMatrixCorrected(Matrix4x4 opencv)
@@ -262,6 +279,64 @@ public class CameraDetection : MonoBehaviour
         res.m23 = opencv.m23;
         res.m33 = 1;
         return res;
+    }
+
+    public Matrix4x4 Vector3QuatToMatrix(Vector3 pos, Quaternion rot)
+    {
+        Matrix4x4 rotM = Matrix44FromQuat(rot);
+
+        Matrix4x4 res = new Matrix4x4();
+        res.m00 = rotM.m00;
+        res.m10 = -rotM.m10;
+        res.m20 = rotM.m20;
+        res.m30 = 0;
+
+        res.m01 = rotM.m01;
+        res.m11 = -rotM.m11;
+        res.m21 = rotM.m21;
+        res.m31 = 0;
+
+        res.m02 = rotM.m02;
+        res.m12 = -rotM.m12;
+        res.m22 = rotM.m22;
+        res.m32 = 0;
+
+        res.m03 = pos.x;
+        res.m13 = -pos.y;
+        res.m23 = pos.z;
+        res.m33 = 1;
+
+        return res;
+    }
+
+    public Matrix4x4 Matrix44FromQuat(Quaternion q)
+    {
+        Matrix4x4 m = Matrix4x4.identity;
+        float q00 = 2.0f * q[0] * q[0];
+        float q11 = 2.0f * q[1] * q[1];
+        float q22 = 2.0f * q[2] * q[2];
+        float q01 = 2.0f * q[0] * q[1];
+        float q02 = 2.0f * q[0] * q[2];
+        float q03 = 2.0f * q[0] * q[3];
+
+        float q12 = 2.0f * q[1] * q[2];
+        float q13 = 2.0f * q[1] * q[3];
+
+        float q23 = 2.0f * q[2] * q[3];
+
+        m.m00 = 1.0f - q11 - q22;
+        m.m10 = q01 - q23;
+        m.m20 = q02 + q13;
+
+        m.m01 = q01 + q23;
+        m.m11 = 1.0f - q22 - q00;
+        m.m21 = q12 - q03;
+
+        m.m02 = q02 - q13;
+        m.m12 = q12 + q03;
+        m.m22 = 1.0f - q11 - q00;
+
+        return m;
     }
 
     public Quaternion ExtractRotation(Matrix4x4 matrix)
