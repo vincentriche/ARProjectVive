@@ -32,6 +32,7 @@ public class CameraDetection : MonoBehaviour
     public RawImage rawImageDisplay;
     public int camNumber = 0;
     public GameObject target;
+    public GameObject chessboard;
     public Camera mainCamera;
     public float patternScale = 1.0f;
     public Vector2 pattern = new Vector2(7, 4);
@@ -60,7 +61,7 @@ public class CameraDetection : MonoBehaviour
     {
         // Set target scale
         patternSize = new Size((int)pattern.x, (int)pattern.y);
-        target.transform.localScale = new Vector3(patternScale * (patternSize.Width + 1), patternScale * (patternSize.Height + 1), 1.0f);
+        chessboard.transform.localScale = new Vector3(patternScale * (patternSize.Width + 1), patternScale * (patternSize.Height + 1), 1.0f);
 
         // Construct world corner points
         Vector2 offset = new Vector2(patternSize.Width / 2.0f * patternScale, patternSize.Height / 2.0f * patternScale);
@@ -140,7 +141,7 @@ public class CameraDetection : MonoBehaviour
             CvInvoke.CvtColor(resultMat, grayMat, ColorConversion.Bgra2Gray);
 
             cvImageCorners = new Matrix<float>(patternSize.Width * patternSize.Height, 1, 2);
-            if (Controller != null && Controller.GetHairTrigger() == false)
+            if (Controller != null && Controller.GetHairTrigger() == true)
             {
                 bool detected = DetectCheckerboard(grayMat, resultMat);
                 if (detected)
@@ -237,9 +238,7 @@ public class CameraDetection : MonoBehaviour
         //cvModelView = cvModelView.inverse;
 
         Vector3 position = ExtractPosition(cvModelView) + localOffset;
-        Quaternion rotation = ExtractRotation(cvModelView)
-            * Quaternion.AngleAxis(zOffsetAngle, Vector3.forward) 
-            * Quaternion.AngleAxis(180, Vector3.up);
+        Quaternion rotation = ExtractRotation(cvModelView);
 
         GameObject temp = new GameObject();
         temp.transform.position = position;
@@ -250,38 +249,18 @@ public class CameraDetection : MonoBehaviour
         rotation = temp.transform.rotation;
         Destroy(temp);
 
-        Matrix4x4 corrected = Vector3QuatToMatrix(position, rotation);
+        Matrix4x4 corrected = BuildCorrectedMatrix(position, rotation);
         corrected = mainCamera.transform.localToWorldMatrix * corrected;
         target.transform.position = ExtractPosition(corrected);
-        target.transform.rotation = ExtractRotation(corrected) * Quaternion.AngleAxis(180, Vector3.up);
+        Quaternion finalRotation = ExtractRotation(corrected);
+        finalRotation = new Quaternion(-finalRotation.x,
+                                       -finalRotation.y,
+                                       -finalRotation.z,
+                                       -finalRotation.w);
+        target.transform.rotation = finalRotation;
     }
 
-    public Matrix4x4 ExtractMatrixCorrected(Matrix4x4 opencv)
-    {
-        Matrix4x4 res = new Matrix4x4();
-        res.m00 = opencv.m00;
-        res.m10 = -opencv.m10;
-        res.m20 = opencv.m20;
-        res.m30 = 0;
-
-        res.m01 = opencv.m01;
-        res.m11 = -opencv.m11;
-        res.m21 = opencv.m21;
-        res.m31 = 0;
-
-        res.m02 = opencv.m02;
-        res.m12 = -opencv.m12;
-        res.m22 = opencv.m22;
-        res.m32 = 0;
-
-        res.m03 = opencv.m03;
-        res.m13 = -opencv.m13;
-        res.m23 = opencv.m23;
-        res.m33 = 1;
-        return res;
-    }
-
-    public Matrix4x4 Vector3QuatToMatrix(Vector3 pos, Quaternion rot)
+    public Matrix4x4 BuildCorrectedMatrix(Vector3 pos, Quaternion rot)
     {
         Matrix4x4 rotM = Matrix44FromQuat(rot);
 
