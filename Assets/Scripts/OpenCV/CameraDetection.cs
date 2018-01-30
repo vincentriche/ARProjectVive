@@ -29,6 +29,7 @@ public class CameraDetection : MonoBehaviour
         }
     }
 
+    public bool detectionFinished = false;
     public RawImage rawImageDisplay;
     public int camNumber = 0;
     public GameObject target;
@@ -141,14 +142,13 @@ public class CameraDetection : MonoBehaviour
             CvInvoke.CvtColor(resultMat, grayMat, ColorConversion.Bgra2Gray);
 
             cvImageCorners = new Matrix<float>(patternSize.Width * patternSize.Height, 1, 2);
-            if (Controller != null && Controller.GetHairTrigger() == true)
+            bool detected = DetectCheckerboard(grayMat, resultMat);
+            if (detected)
             {
-                bool detected = DetectCheckerboard(grayMat, resultMat);
-                if (detected)
-                    SetCameraTransformFromChessboard();
+                detectionFinished = true;
+                SetCameraTransformFromChessboard();
             }
-
-
+       
             handle.Free();
             resultHandle.Free();
             grayHandle.Free();
@@ -163,11 +163,6 @@ public class CameraDetection : MonoBehaviour
             displayTexture.LoadRawTextureData(bytes);
             displayTexture.Apply();
             TrackedCameraScript.Instance.screenRenderer.material.mainTexture = displayTexture;
-        }
-
-        if (displayTexture != null)
-        {
-            rawImageDisplay.texture = displayTexture;
         }
     }
 

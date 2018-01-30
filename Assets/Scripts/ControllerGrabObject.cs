@@ -37,26 +37,26 @@ public class ControllerGrabObject : MonoBehaviour
             }
         }
     }
-    private void SetCollidingObject(Collider col)
+    private void SetCollidingObject(Collision col)
     {
-        if (collidingObject || !col.GetComponent<Rigidbody>())
+        if (collidingObject || !col.transform.GetComponent<Rigidbody>())
         {
             return;
         }
         collidingObject = col.gameObject;
     }
 
-    public void OnTriggerEnter(Collider other)
+    public void OnCollisionEnter(Collision other)
     {
         SetCollidingObject(other);
     }
     
-    public void OnTriggerStay(Collider other)
+    public void OnCollisionStay(Collision other)
     {
         SetCollidingObject(other);
     }
     
-    public void OnTriggerExit(Collider other)
+    public void OnCollisionExit(Collision other)
     {
         if (!collidingObject)
         {

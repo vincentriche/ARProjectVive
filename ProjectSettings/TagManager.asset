@@ -8,6 +8,7 @@ TagManager:
   - Character
   - Glove
   - Target
+  - Beer
   layers:
   - Default
   - TransparentFX
