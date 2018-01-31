@@ -16,8 +16,7 @@ public class HoldMyBeer : MonoBehaviour
     }
 
     public Transform baseBeerTransform;
-    public Transform baseGloveTransform;
-
+    public Transform baseBallTransform;
     public GameObject ball;
 
     private void Update()
@@ -31,7 +30,7 @@ public class HoldMyBeer : MonoBehaviour
         {
             ball.transform.GetComponent<Rigidbody>().velocity = Vector3.zero;
             ball.transform.GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
-            ball.transform.position = baseGloveTransform.position;
+            ball.transform.position = baseBallTransform.position;
             ball.transform.rotation = Quaternion.identity;
         }
     }

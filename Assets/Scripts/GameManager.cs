@@ -55,7 +55,7 @@ public class GameManager : MonoBehaviour
         GameObject objs = Instantiate(sceneObjs, targetCharacter.transform.position - (Vector3.up * 0.93f), sceneObjs.transform.rotation);
         sceneGround.SetActive(true);
         sceneGround.GetComponent<HoldMyBeer>().baseBeerTransform = objs.transform.GetChild(0);
-        sceneGround.GetComponent<HoldMyBeer>().baseGloveTransform = objs.transform.GetChild(1);
+        sceneGround.GetComponent<HoldMyBeer>().baseBallTransform = objs.transform.GetChild(1);
 
         var rigidbodies = GetComponentsInChildren<Rigidbody>();
         foreach (Rigidbody rb in rigidbodies)
